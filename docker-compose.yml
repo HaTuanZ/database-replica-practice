@@ -1,0 +1,29 @@
+version: "3.4"
+services:
+    db-master-1:
+        image: mysql:8.4
+        environment:
+            MYSQL_DATABASE: example_db
+            MYSQL_ROOT_PASSWORD: '!XJk>YGdz-ty'
+        ports:
+            - 3307:3306
+        volumes:
+            - ./mysql-data-master-1:/var/lib/mysql
+    db-slave-1:
+        image: mysql:8.4
+        environment:
+            MYSQL_DATABASE: example_db
+            MYSQL_ROOT_PASSWORD: d@rfJ?(?.#r9
+        ports:
+            - 3308:3306
+        volumes:
+            - ./mysql-data-slave-1:/var/lib/mysql
+    db-slave-2:
+        image: mysql:8.4
+        environment:
+            MYSQL_DATABASE: example_db
+            MYSQL_ROOT_PASSWORD: GK^_nz;<PTy@
+        ports:
+            - 3309:3306
+        volumes:
+            - ./mysql-data-slave-1:/var/lib/mysql
