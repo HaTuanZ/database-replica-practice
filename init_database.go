@@ -33,14 +33,12 @@ func main() {
 
 	masterReplica, err := strconv.Atoi(os.Getenv("MASTER_REPLICA"))
 	if err != nil {
-		fmt.Print("Invalid master replica value")
-		return
+		panic(err)
 	}
 
 	slaveReplicas, err := strconv.Atoi(os.Getenv("SLAVE_REPLICA"))
 	if err != nil {
-		fmt.Println("Invalid SLAVE_REPLICA value")
-		return
+		panic(err)
 	}
 
 	compose := ComposeFile{
@@ -87,10 +85,14 @@ func main() {
 	data, err := yaml.Marshal(&compose)
 
 	if err != nil {
-		panic((err))
+		panic(err)
 	}
 
-	os.WriteFile("docker-compose.yml", data, 0644)
+	err = os.WriteFile("docker-compose.yml", data, 0644)
+
+	if err != nil {
+		panic(err)
+	}
 
 	fmt.Printf("docker-compose.yml generated successfully")
 }
