@@ -1,4 +1,4 @@
-module db
+module github.com/HaTuanZ/database-replica-practice
 
 go 1.22.5
 

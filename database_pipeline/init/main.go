@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math/big"
 	"os"
-	"path/filepath"
 	"strconv"
 
 	"github.com/joho/godotenv"
@@ -18,10 +17,12 @@ type ComposeFile struct {
 }
 
 type Service struct {
-	Image       string            `yaml:"image"`
-	Environment map[string]string `yaml:"environment"`
-	Ports       []string          `yaml:"ports"`
-	Volumes     []string          `yaml:"volumes"`
+	Image         string            `yaml:"image"`
+	Command       string            `yaml:"command"`
+	ContainerName string            `yaml:"container_name"`
+	Environment   map[string]string `yaml:"environment"`
+	Ports         []string          `yaml:"ports"`
+	Volumes       []string          `yaml:"volumes"`
 }
 
 func main() {
@@ -48,36 +49,36 @@ func main() {
 
 	for i := 1; i <= masterReplica; i++ {
 		serviceName := fmt.Sprintf("db-master-%d", i)
-		configFileName := createConfigFile(fmt.Sprintf("my-master-%d.conf", i), i)
 
 		compose.Services[serviceName] = Service{
-			Image: "mysql:8.4",
+			Image:         "mysql:8.4",
+			ContainerName: fmt.Sprintf("db-master-%d", i),
+			Command:       fmt.Sprintf("--server-id=%d --log-bin=mysql-bin --binlog-format=row", i),
 			Environment: map[string]string{
 				"MYSQL_ROOT_PASSWORD": generatePassword(),
 				"MYSQL_DATABASE":      "example_db",
 			},
 			Ports: []string{fmt.Sprintf("%d:3306", 3306+1)},
 			Volumes: []string{
-				fmt.Sprintf("./mysql-data-master-%d:/var/lib/mysql", i),
-				fmt.Sprintf("./%s:/etc/mysql/conf.d/my.cnf", configFileName),
+				fmt.Sprintf("./data/mysql-data-master-%d:/var/lib/mysql", i),
 			},
 		}
 	}
 
 	for i := 1; i <= slaveReplicas; i++ {
 		serviceName := fmt.Sprintf("db-slave-%d", i)
-		configFileName := createConfigFile(fmt.Sprintf("my-slave-%d.conf", i), i)
 
 		compose.Services[serviceName] = Service{
-			Image: "mysql:8.4",
+			Image:         "mysql:8.4",
+			ContainerName: fmt.Sprintf("db-slave-%d", i),
+			Command:       fmt.Sprintf("--server-id=%d --log-bin=mysql-bin --binlog-format=row", i+masterReplica),
 			Environment: map[string]string{
 				"MYSQL_ROOT_PASSWORD": generatePassword(),
 				"MYSQL_DATABASE":      "example_db",
 			},
 			Ports: []string{fmt.Sprintf("%d:3306", 3306+i+masterReplica)},
 			Volumes: []string{
-				fmt.Sprintf("./mysql-data-slave-%d:/var/lib/mysql", 1),
-				fmt.Sprintf("./%s:/etc/mysql/conf.d/my.cnf", configFileName),
+				fmt.Sprintf("./data/mysql-data-slave-%d:/var/lib/mysql", i),
 			},
 		}
 	}
@@ -110,30 +111,4 @@ func generatePassword() string {
 	}
 
 	return string(password)
-}
-
-func createConfigFile(fileName string, serverId int) string {
-	config := fmt.Sprintf(`[mysqld]
-server-id=%d
-log_bin=mysql-bin
-binlog_format=ROW
-	`, serverId)
-
-	filePath := "conf/" + fileName
-
-	dir := filepath.Dir(filePath)
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		err := os.MkdirAll(dir, os.ModePerm)
-		if err != nil {
-			panic(err)
-		}
-	}
-
-	err := os.WriteFile(filePath, []byte(config), 0644)
-
-	if err != nil {
-		panic(err)
-	}
-
-	return filePath
 }
